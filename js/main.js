@@ -71,49 +71,111 @@ const posts = [
 // Selezione il container
 const  postsContainer = document.querySelector(`#container`); 
 
+const likedArray =[];
+
 // Creo un ciclo per aggiungere ogni singolo post al DOM
 posts.forEach((singleObject) =>{
     const newPost = newSingleDOM(singleObject);
     postsContainer.innerHTML += newPost;
 })
 
+// EVENTS
+
+const allLikeButton = document.querySelectorAll(`.js-liked-button`);
+const allCounters = document.querySelectorAll(`.js-liked-counter`);
+allLikeButton.forEach((singleLikeButton, index) => {
+    singleLikeButton.addEventListener(`click`, function(event){
+        // Per evitare che la pagina si ricarichi di default
+        event.preventDefault() 
+
+        const counterValue = allCounters[index];
+        const relatedCounterNumber =  parseInt(counterValue.textContent);
+
+        // Applico la clase solo se non ce l'ha già
+        if (!this.classlist.contains(`like-button-liked`)) {
+            // Aggiungo la classe sull'elemento che ho cliccato
+            this.classlist.add(`like-button-liked`);
+            // Prendo il counter e lo aumento di 1
+            counterValue.innerHTML =  relatedCounterNumber + 1 ;
+            // Prendo l'id del post su cui ho cliccato e lo aggiungo all'array
+            const postId = parseInt(this.dataset.postid);
+            likedArray.push(postId);
+        }  else {
+             // Rimuovo la classe sull'elemento se è già cliccato
+            this.classlist.remove(`like-button-liked`);
+            // Prendo il counter e lo diminuisco di 1
+            counterValue.innerHTML =  relatedCounterNumber - 1 ;
+    }});
+});
+
+// FUNCIOTN
+
 // Creo una funziona da cui estraggo i singoli elementi dall' array di oggetti,
 //  e creo il post da attaccare al DOM
 function newSingleDOM(object) {
 
-    const {content, media, author, likes, created} = object;
+    const {id, content, media, author, likes, created} = object;
+
+    const authorImageTemplateResult = authorImageTemplate(author);
 
     const newDom = `
     <div class="post">
             <div class="post__header">
                 <div class="post-meta">                    
                     <div class="post-meta__icon">
-                        <img class="profile-pic" src="${author.image}" alt="Phil Mangione">                    
+                        ${authorImageTemplate}        
                     </div>
                     <div class="post-meta__data">
                         <div class="post-meta__author">${author.name}</div>
-                        <div class="post-meta__time">${created}</div>
+                        <div class="post-meta__time">${convertDate(created)}</div>
                     </div>                    
                 </div>
             </div>
             <div class="post__text">${content}</div>
             <div class="post__image">
-                <img src="${media}" alt="">
+                <img src="${media}" alt="${author.name}">
             </div>
             <div class="post__footer">
                 <div class="likes js-likes">
                     <div class="likes__cta">
-                        <a class="like-button  js-like-button" href="#" data-postid="1">
+                        <a class="like-button  js-like-button" href="#" data-postid="${id}">
                             <i class="like-button__icon fas fa-thumbs-up" aria-hidden="true"></i>
                             <span class="like-button__label">Mi Piace</span>
                         </a>
                     </div>
                     <div class="likes__counter">
-                        Piace a <b id="like-counter-1" class="js-likes-counter">${likes}</b> persone
+                        Piace a <b id="like-counter-${id}" class="js-likes-counter">${likes}</b> persone
                     </div>
                 </div> 
             </div>            
         </div>
 `
 return newDom;
+};
+
+// 1. Formattare le date in formato italiano (gg/mm/aaaa)
+function convertDate(originalDate) {
+     // Destrutturo l'array e costruisco la data in formato italiano
+     const createdArray = originalDate.split(`-`);
+     const [year, month, day] = createdArray;
+     const fullDate = `${day}/${month}/${year}`;
+     return fullDate;
+}
+
+// 2. Gestire l'assenza dell'immagine profilo con un elemento di fallback che
+//  contiene le iniziali dell'utente (es. Luca Formicola > LF)
+function authorImageTemplate(author) {
+    let imageTemplate;
+    if (author.image) {
+        imageTemplate = `<img class="profile-pic" src="${author.image}" alt="${author.name}">`;
+        } else {
+            const authorNameArray = author.name.split(` `);
+            const [name, lastname] =  authorNameArray;
+
+            imageTemplate = `
+            <div class="profile-pic-default">
+                <span> ${name[0]}${lastname[0]}</span>
+            </div>`    
+    }
+    return imageTemplate;
 }
